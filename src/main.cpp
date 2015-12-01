@@ -1,7 +1,7 @@
 #include <iostream>
 #include <pcl/console/parse.h>
 
-#include "utils/Utilities.h"
+#include "Utils/Utilities.h"
 using namespace std;
 using namespace pcl;
 void printUsage(const char* name){
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
 		if (pcl::console::find_argument(argc, argv, "--save") >= 0){
 			indices.erase(indices.end()-1);
 		}
-
+		vector<string> paths (indices.size());
 		Utilities::getFiles(argv, indices, paths);
 		indices.clear();
 		indices = pcl::console::parse_file_extension_argument(argc, argv, "ply");
