@@ -1,2 +1,2 @@
-#ignore everything in Utils file
-src/Utils
+#ignore build files
+build/
