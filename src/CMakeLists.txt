@@ -20,6 +20,8 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 add_executable (plainDrawer main.cpp 
-							utils/Utilities.cpp 
-							utils/Viewer.cpp)
+							Utils/Utilities.cpp 
+							Utils/Viewer.cpp
+							Utils/Log.cpp
+							Utils/Timer.cpp)
 target_link_libraries (plainDrawer ${PCL_LIBRARIES})

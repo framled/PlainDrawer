@@ -5,6 +5,8 @@
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
 #include "Utils/Utilities.h"
+#include "Utils/Log.h"
+#include "Utils/Timer.h"
 
 
 using namespace std;
@@ -60,7 +62,16 @@ int main(int argc, char** argv)
 	float media = 50, devest = 1.0, size;
 	string axis ("z");
 
-	string configuration ();
+	string savePath;
+	if(console::find_argument(argc,argv,"--save")>= 0){
+		savePath = argv[console::find_argument(argc,argv,"--save") + 1];
+	}
+
+	Timer timer;
+	Log* ptr_log;
+	Log log(savePath);
+	ptr_log = &log;
+	string configuration("Filter:\n");
 	if(console::find_argument(argc,argv,"-s")>= 0){
 
 		if(!isAlpha(argv[console::find_argument(argc,argv,"-s") + 1])){
@@ -73,13 +84,20 @@ int main(int argc, char** argv)
 		sor.setMeanK (media);
 		sor.setStddevMulThresh (devest);
 		sor.filter (*cloud_filtered);
-		cerr << "Cloud after filtering: " << endl;
-		cerr << *cloud_filtered << endl;
+
+		configuration += "Statistical Outlier Removal\n";
+		configuration += "media: 					"+ to_string(media) +"\n";
+		configuration += "Desvest: 					"+ to_string(devest) +"\n";
+		configuration += "total point after filer: 	"+ to_string(cloud_filtered->height * cloud_filtered->width) +"\n";
+		configuration += "Time to complete: 		"+ timer.report() +"\n";
+		cout << configuration << endl;
+		ptr_log->write(configuration);
 	}
 
+	timer.reset();
 	if(console::find_argument(argc,argv, "-v") >= 0){
 
-		if(!isAlpha(argv[argv[console::find_argument(argc,argv,"-v") + 1]])){
+		if(!isAlpha(argv[console::find_argument(argc,argv,"-v") + 1])){
 			size = atof(argv[console::find_argument(argc,argv,"-v") + 1]);
 		}
 		// Create the filtering object
@@ -88,19 +106,24 @@ int main(int argc, char** argv)
 		sor.setLeafSize (0.01f, 0.01f, 0.01f);
 		sor.filter (*cloud_filtered);
 
-		std::cerr << "PointCloud after filtering: "
-				<< cloud_filtered->width * cloud_filtered->height
-				<< " data points (" << getFieldsList (*cloud_filtered) << ")."
-				<< endl;
+		configuration += "Voxel Grid\n";
+		configuration += "size of voxel: 			"+ to_string(size) +"\n";
+		configuration += "lief size: 				"+ to_string(0.01) +","+ to_string(0.01) +"," +to_string(0.01)+"\n";
+		configuration += "total point after filer: 	"+ to_string(cloud_filtered->height * cloud_filtered->width) +"\n";
+		configuration += "Time to complete: 		"+ timer.report() +"\n";
+		cout << configuration << endl;
+		ptr_log->write(configuration);
+
 	}
 	if(console::find_argument(argc,argv, "-p") >= 0){
 		axis = argv[console::find_argument(argc,argv,"-p") + 1];
 	}
 
-	if(console::find_argument(argc,argv,"--save")>= 0){
-		int how_many_files = argv[console::find_argument(argc,argv,"-p") + 1];
-		Utilities::writePCDFile(ptr_cloud, std::string path, how_many_files );
-	}
 
+	if(console::find_argument(argc,argv,"--save")>= 0){
+		int how_many_files = atoi(argv[console::find_argument(argc,argv,"--save") + 2]);
+		Utilities::writePCDFile(ptr_cloud, savePath, how_many_files );
+	}
+	ptr_log->close();
 	return 0;
 }
