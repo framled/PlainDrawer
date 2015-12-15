@@ -4,13 +4,21 @@
 #include <pcl/console/parse.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/common/common.h>
 #include "Utils/Utilities.h"
 #include "Utils/Log.h"
 #include "Utils/Timer.h"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include "opencv2/imgproc.hpp"
+
+
 
 
 using namespace std;
 using namespace pcl;
+using namespace cv;
 void printUsage(const char* name){
 	cout << "Printing usage of: " <<name << endl
 			<< "--file [path]				Read the file" << endl
@@ -30,6 +38,8 @@ bool isAlpha(char str[]){
 	}
 	return false;
 }
+
+void project(const PointCloud<pcl::PointXYZ>::ConstPtr& cloud, string path, const string& axis);
 int main(int argc, char** argv)
 {
 	if(argc <= 1 || console::find_argument(argc, argv, "-h") >= 0){
@@ -72,6 +82,8 @@ int main(int argc, char** argv)
 	Log log(savePath);
 	ptr_log = &log;
 	string configuration("Filter:\n");
+
+	/* Statistical Filter */
 	if(console::find_argument(argc,argv,"-s")>= 0){
 
 		if(!isAlpha(argv[console::find_argument(argc,argv,"-s") + 1])){
@@ -95,6 +107,7 @@ int main(int argc, char** argv)
 	}
 
 	timer.reset();
+	/* Voxel Filter */
 	if(console::find_argument(argc,argv, "-v") >= 0){
 
 		if(!isAlpha(argv[console::find_argument(argc,argv,"-v") + 1])){
@@ -115,15 +128,76 @@ int main(int argc, char** argv)
 		ptr_log->write(configuration);
 
 	}
+	timer.reset();
+	/* PassThroug Filter */
 	if(console::find_argument(argc,argv, "-p") >= 0){
 		axis = argv[console::find_argument(argc,argv,"-p") + 1];
+
+		// Create the filtering object
+		pcl::PassThrough<pcl::PointXYZ> pass;
+		pass.setInputCloud (ptr_cloud);
+		pass.setFilterFieldName (axis);
+		pass.setFilterLimits (0.0, 1.0);
+		//pass.setFilterLimitsNegative (true);
+		pass.filter (*cloud_filtered);
+
+		configuration += "PassThroug\n";
+		configuration += "axis: 					"+ axis +"\n";
+		configuration += "range: 					"+ to_string(0.0) +","+ to_string(1.0) + "\n";
+		configuration += "total point after filer: 	"+ to_string(cloud_filtered->height * cloud_filtered->width) +"\n";
+		configuration += "Time to complete: 		"+ timer.report() +"\n";
+		cout << configuration << endl;
+		ptr_log->write(configuration);
 	}
 
-
+	/* Save */
 	if(console::find_argument(argc,argv,"--save")>= 0){
 		int how_many_files = atoi(argv[console::find_argument(argc,argv,"--save") + 2]);
 		Utilities::writePCDFile(ptr_cloud, savePath, how_many_files );
 	}
 	ptr_log->close();
 	return 0;
+}
+void project(const PointCloud<pcl::PointXYZ>::ConstPtr& cloud, string path, const string& axis){
+	PointXYZ min, max;
+	int width, height;
+	getMinMax3D(*cloud, min, max);
+
+	if(axis.compare("x") == 0){
+		width = max.y;
+		height = max.z;
+	}
+	else if(axis.compare("y") == 0){
+		width = max.x;
+		height = max.z;
+	}else if(axis.compare("z") == 0){
+		width = max.x;
+		height = max.y;
+	}
+
+	width *= 100;
+	height *= 100;
+	Mat image (width, height, CV_8UC3, Scalar(0,0,255));
+	for(PointCloud<PointXYZ>::const_iterator i = cloud->begin(); i < cloud->end(); i++){
+		int x = i->x;
+		int y = i->y;
+		int z = i->z;
+		cv::Point center (x,y);
+		if(axis.compare("x") == 0){
+			center.x = y;
+			center.y = z;
+		}else if(axis.compare("y") == 0){
+			center.x = x;
+			center.y = z;
+		}else if(axis.compare("z") == 0){
+			center.x = x;
+			center.y = y;
+		}
+		center.x *= 100;
+		center.y *= 100;
+		circle(image, center, 1.0, Scalar(0,0,0));
+	}
+	string extension(Utilities::getExtension(path));
+	path.replace(path.end()-3,path.end(),extension);
+	imwrite( path + ".jpg", image);
 }

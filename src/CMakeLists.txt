@@ -14,14 +14,16 @@ else()
 endif()
 
 find_package(PCL 1.2 REQUIRED)
+find_package( OpenCV REQUIRED )
 
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+
 
 add_executable (plainDrawer main.cpp 
 							Utils/Utilities.cpp 
 							Utils/Viewer.cpp
 							Utils/Log.cpp
 							Utils/Timer.cpp)
-target_link_libraries (plainDrawer ${PCL_LIBRARIES})
+target_link_libraries (plainDrawer ${PCL_LIBRARIES} ${OpenCV_LIBS})
