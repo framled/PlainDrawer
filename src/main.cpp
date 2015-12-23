@@ -175,8 +175,8 @@ void project(const PointCloud<pcl::PointXYZ>::ConstPtr& cloud, string path, cons
 		height = max.y;
 	}
 
-	width *= 100;
-	height *= 100;
+	width *= 100 + 50;
+	height *= 100 + 50;
 	Mat image (width, height, CV_8UC3, Scalar(0,0,255));
 	for(PointCloud<PointXYZ>::const_iterator i = cloud->begin(); i < cloud->end(); i++){
 		int x = i->x;
